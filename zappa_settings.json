@@ -1,0 +1,23 @@
+{
+    "dev": {
+        "app_function": "app.app",
+        "aws_region": "us-east-1",
+        "profile_name": "default",
+        "project_name": "zappa-quick-sta",
+        "runtime": "python3.6",
+        "s3_bucket": "zappa-quick-start",
+        "keep_warm": false,
+        "cors": true,
+        "authorizer": {
+            "type": "COGNITO_USER_POOLS",
+            "provider_arns": [
+                "arn:aws:cognito-idp:us-east-1:305771329026:userpool/us-east-1_BF8XF8Yfq"
+            ]
+        },
+        "context_header_mappings": {
+            "API-Stage": "stage",
+            "email": "authorizer.claims.email",
+            "Cognito-Username": "authorizer.claims.cognito:username"
+        }
+    }
+}

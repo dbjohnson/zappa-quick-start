@@ -1,0 +1,98 @@
+<!doctype html>
+
+<html lang='en'>
+<head>
+  <meta charset='utf-8'>
+  <title>Zappa Quick Start</title>
+  <script src='https://code.jquery.com/jquery-3.2.1.min.js'></script>
+  <script src='amazon-cognito-auth.min.js'></script>
+  <script type='text/javascript'>
+
+    // pass config to Cognito SDK - this is the main bit to modify
+    // if you want to try this yourself
+    function initCognitoSDK() {
+      const auth = new AmazonCognitoIdentity.CognitoAuth({
+        ClientId: '1ojb52d4pps1en2ks2majrvjq1',
+        AppWebDomain: 'zappaqs.auth.us-east-1.amazoncognito.com',
+        TokenScopesArray: ['email', 'openid'],
+        RedirectUriSignIn: 'https://s3.amazonaws.com/zappa-quick-start/index.html',
+        RedirectUriSignOut: 'https://s3.amazonaws.com/zappa-quick-start/index.html'
+      })
+
+      auth.userhandler = {
+        onSuccess: function(result) {
+          console.log('authentication success', result);
+          $('#authstatus').text('Authenticated')
+          $('#authstatus').css('color', 'limegreen')
+        },
+        onFailure: function(error) {
+          console.error('authentication error', error);
+          $('#authstatus').text('Authentication failure')
+          $('#authstatus').css('color', 'crimson')
+        }
+      };
+
+      return auth;
+    }
+
+    // call the API using token from cognito auth
+    function fetchapi() {
+      fetch(
+        $('#apiurl').val(),
+        {
+          // inject authorization header
+          headers: new Headers({
+            'Authorization': auth.getSignInUserSession().idToken.jwtToken
+          })
+        }
+      )
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (result) {
+        // show response
+        $('#apiresponse').text(JSON.stringify(result, null, 2))
+      })
+      .catch(function(err) {
+        $('#apiresponse').text('Error!\n' + err)
+      })
+    }
+
+    window.onload = () => {
+      auth = initCognitoSDK()
+      // if this page load is from the auth callback, the cognito token will
+      // be in the href - we can pass this directly to the cognito lib to
+      // decode
+      auth.parseCognitoWebResponse(window.location.href);
+
+      // try fetching from the API
+      fetchapi()
+    }
+
+  </script>
+</head>
+
+<body>
+  <h1>Zappa Quick Start</h1>
+  <a href="https://github.com/dbjohnson/zappa-quick-start">See the README at Github for more info</a>
+  <p/>
+  <h4 style="margin-bottom: 5px">Authentication</h4>
+  <div>Click below to authenticate via Cognito</div>
+  <button onclick='auth.getSession()'>Authenticate</button>
+  <button onclick='auth.signOut();'>Sign out</button>
+  <b><div id='authstatus' style='color: crimson'>Not authenticated</div></b>
+  <h4 style="margin-bottom: 5px">API URL</h4>
+  <div>Try adding query parameters - they will be reflected in the response</div>
+  <input
+    id='apiurl'
+    type='text'
+    value='https://jgm4b9sgw5.execute-api.us-east-1.amazonaws.com/dev'
+    style='width:50%'
+  />
+  <div/>
+  <button onclick='fetchapi()'>Fetch</button>
+  <p/>
+  <h4>Response (reflected request):</h4>
+  <div id='apiresponse' style='width: 100%; white-space: pre'></div>
+</body>
+</html>
